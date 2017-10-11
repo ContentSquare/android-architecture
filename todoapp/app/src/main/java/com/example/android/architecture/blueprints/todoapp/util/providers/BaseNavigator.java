@@ -1,5 +1,8 @@
 package com.example.android.architecture.blueprints.todoapp.util.providers;
 
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+
 /**
  * Handles navigation between Activities in the app.
  */
@@ -34,4 +37,5 @@ public interface BaseNavigator {
      * @param extraValue the value for the extra the is passed in the Intent.
      */
     void startActivityForResultWithExtra(Class cls, int requestCode, String extraKey, String extraValue);
+
 }

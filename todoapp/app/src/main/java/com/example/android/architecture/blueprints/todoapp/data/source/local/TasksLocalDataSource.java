@@ -16,6 +16,8 @@
 
 package com.example.android.architecture.blueprints.todoapp.data.source.local;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -35,9 +37,10 @@ import java.util.List;
 
 import rx.Completable;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func0;
 import rx.functions.Func1;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 
 /**
@@ -62,7 +65,12 @@ public class TasksLocalDataSource implements TasksDataSource {
         TasksDbHelper dbHelper = new TasksDbHelper(context);
         SqlBrite sqlBrite = new SqlBrite.Builder().build();
         mDatabaseHelper = sqlBrite.wrapDatabaseHelper(dbHelper, schedulerProvider.io());
-        mTaskMapperFunction = this::getTask;
+        mTaskMapperFunction = new Func1<Cursor, Task>() {
+            @Override
+            public Task call(Cursor cursor) {
+                return getTask(cursor);
+            }
+        };
     }
 
     public static TasksLocalDataSource getInstance(
@@ -121,36 +129,59 @@ public class TasksLocalDataSource implements TasksDataSource {
     }
 
     @Override
-    public Completable saveTask(@NonNull Task task) {
+    public Completable saveTask(@NonNull final Task task) {
         checkNotNull(task);
-        return Completable.fromAction(() -> {
-            ContentValues values = toContentValues(task);
-            mDatabaseHelper.insert(TaskEntry.TABLE_NAME, values, SQLiteDatabase.CONFLICT_REPLACE);
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                ContentValues values = toContentValues(task);
+                mDatabaseHelper.insert(TaskEntry.TABLE_NAME, values, SQLiteDatabase.CONFLICT_REPLACE);
+            }
         });
     }
 
     @Override
-    public Completable saveTasks(@NonNull List<Task> tasks) {
+    public Completable saveTasks(@NonNull final List<Task> tasks) {
         checkNotNull(tasks);
 
-        return Observable.using(mDatabaseHelper::newTransaction,
-                transaction -> inTransactionInsert(tasks, transaction),
-                BriteDatabase.Transaction::end)
-                .toCompletable();
+        return Completable.using(new Func0<BriteDatabase.Transaction>() {
+            @Override
+            public BriteDatabase.Transaction call() {
+                return mDatabaseHelper.newTransaction();
+            }
+        }, new Func1<BriteDatabase.Transaction, Completable>() {
+            @Override
+            public Completable call(BriteDatabase.Transaction transaction) {
+                return inTransactionInsert(tasks, transaction).toCompletable();
+            }
+        }, new Action1<BriteDatabase.Transaction>() {
+            @Override
+            public void call(BriteDatabase.Transaction transaction) {
+                transaction.end();
+            }
+        });
     }
 
     @NonNull
     private Observable<List<Task>> inTransactionInsert(@NonNull List<Task> tasks,
-                                                       @NonNull BriteDatabase.Transaction transaction) {
+                                                       @NonNull final BriteDatabase.Transaction transaction) {
         checkNotNull(tasks);
         checkNotNull(transaction);
 
         return Observable.from(tasks)
-                .doOnNext(task -> {
-                    ContentValues values = toContentValues(task);
-                    mDatabaseHelper.insert(TaskEntry.TABLE_NAME, values);
+                .doOnNext(new Action1<Task>() {
+                    @Override
+                    public void call(Task task) {
+                        ContentValues values = toContentValues(task);
+                        mDatabaseHelper.insert(TaskEntry.TABLE_NAME, values);
+                    }
                 })
-                .doOnCompleted(transaction::markSuccessful)
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        transaction.markSuccessful();
+                    }
+                })
                 .toList();
     }
 
@@ -170,14 +201,17 @@ public class TasksLocalDataSource implements TasksDataSource {
     }
 
     @Override
-    public Completable completeTask(@NonNull String taskId) {
-        return Completable.fromAction(() -> {
-            ContentValues values = new ContentValues();
-            values.put(TaskEntry.COLUMN_NAME_COMPLETED, true);
+    public Completable completeTask(@NonNull final String taskId) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                ContentValues values = new ContentValues();
+                values.put(TaskEntry.COLUMN_NAME_COMPLETED, true);
 
-            String selection = TaskEntry.COLUMN_NAME_ENTRY_ID + " LIKE ?";
-            String[] selectionArgs = {taskId};
-            mDatabaseHelper.update(TaskEntry.TABLE_NAME, values, selection, selectionArgs);
+                String selection = TaskEntry.COLUMN_NAME_ENTRY_ID + " LIKE ?";
+                String[] selectionArgs = {taskId};
+                mDatabaseHelper.update(TaskEntry.TABLE_NAME, values, selection, selectionArgs);
+            }
         });
     }
 
@@ -187,14 +221,17 @@ public class TasksLocalDataSource implements TasksDataSource {
     }
 
     @Override
-    public Completable activateTask(@NonNull String taskId) {
-        return Completable.fromAction(() -> {
-            ContentValues values = new ContentValues();
-            values.put(TaskEntry.COLUMN_NAME_COMPLETED, false);
+    public Completable activateTask(@NonNull final String taskId) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                ContentValues values = new ContentValues();
+                values.put(TaskEntry.COLUMN_NAME_COMPLETED, false);
 
-            String selection = TaskEntry.COLUMN_NAME_ENTRY_ID + " LIKE ?";
-            String[] selectionArgs = {taskId};
-            mDatabaseHelper.update(TaskEntry.TABLE_NAME, values, selection, selectionArgs);
+                String selection = TaskEntry.COLUMN_NAME_ENTRY_ID + " LIKE ?";
+                String[] selectionArgs = {taskId};
+                mDatabaseHelper.update(TaskEntry.TABLE_NAME, values, selection, selectionArgs);
+            }
         });
     }
 

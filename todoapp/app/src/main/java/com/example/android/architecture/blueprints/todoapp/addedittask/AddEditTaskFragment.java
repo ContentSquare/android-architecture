@@ -31,6 +31,8 @@ import android.widget.TextView;
 import com.example.android.architecture.blueprints.todoapp.R;
 
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
@@ -99,11 +101,18 @@ public class AddEditTaskFragment extends Fragment {
         mSubscription.add(mViewModel.getSnackbarText()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        this::showSnackbar,
+                .subscribe(new Action1<Integer>() {
+                    @Override
+                    public void call(Integer integer) {
+                        showSnackbar(integer);
                         // onError
-                        throwable -> Log.e(TAG, "Error retrieving snackbar text", throwable)));
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.e(TAG, "Error retrieving snackbar text", throwable);
+                    }
+                }));
 
         // The ViewModel holds an observable containing the state of the UI.
         // subscribe to the emissions of the UiModel
@@ -111,11 +120,17 @@ public class AddEditTaskFragment extends Fragment {
         mSubscription.add(mViewModel.getUiModel()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        this::updateUi,
-                        // onError
-                        throwable -> Log.e(TAG, "Error retrieving the task", throwable)));
+                .subscribe(new Action1<AddEditTaskUiModel>() {
+                    @Override
+                    public void call(AddEditTaskUiModel addEditTaskUiModel) {
+                        updateUi(addEditTaskUiModel);
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.e(TAG, "Error retrieving the task", throwable);
+                    }
+                }));
 
     }
 
@@ -143,7 +158,12 @@ public class AddEditTaskFragment extends Fragment {
         FloatingActionButton fab =
                 getActivity().findViewById(R.id.fab_edit_task_done);
         fab.setImageResource(R.drawable.ic_done);
-        fab.setOnClickListener(__ -> saveTask());
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                saveTask();
+            }
+        });
     }
 
     private void saveTask() {
@@ -152,13 +172,17 @@ public class AddEditTaskFragment extends Fragment {
         mSubscription.add(mViewModel.saveTask(title, description)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        () -> {
-                            // nothing to do here
-                        },
-                        // onError
-                        throwable -> Log.e(TAG, "Error saving task", throwable)));
+                .subscribe(new Action0() {
+                    @Override
+                    public void call() {
+
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+
+                    }
+                }));
     }
 
     private void showSnackbar(@StringRes Integer textId) {

@@ -22,10 +22,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
 
-import com.example.android.architecture.blueprints.todoapp.data.FakeTasksRemoteDataSource;
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksDataSource;
 import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepository;
 import com.example.android.architecture.blueprints.todoapp.data.source.local.TasksLocalDataSource;
+import com.example.android.architecture.blueprints.todoapp.data.source.remote.TasksRemoteDataSource;
 import com.example.android.architecture.blueprints.todoapp.util.providers.BaseNavigator;
 import com.example.android.architecture.blueprints.todoapp.util.providers.BaseResourceProvider;
 import com.example.android.architecture.blueprints.todoapp.util.providers.Navigator;
@@ -43,7 +43,7 @@ public class Injection {
     @NonNull
     public static TasksRepository provideTasksRepository(@NonNull Context context) {
         checkNotNull(context);
-        return TasksRepository.getInstance(FakeTasksRemoteDataSource.getInstance(),
+        return TasksRepository.getInstance(TasksRemoteDataSource.getInstance(),
                 TasksLocalDataSource.getInstance(context, provideSchedulerProvider()),
                 provideSchedulerProvider());
     }

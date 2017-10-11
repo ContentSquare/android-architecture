@@ -16,10 +16,15 @@
 
 package com.example.android.architecture.blueprints.todoapp.tasks;
 
+import android.app.Activity;
 import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentActivity;
 
+import com.example.android.architecture.blueprints.todoapp.R;
 import com.example.android.architecture.blueprints.todoapp.addedittask.AddEditTaskActivity;
 import com.example.android.architecture.blueprints.todoapp.taskdetail.TaskDetailActivity;
+import com.example.android.architecture.blueprints.todoapp.taskdetail.TaskDetailFragment;
+import com.example.android.architecture.blueprints.todoapp.util.ActivityUtils;
 import com.example.android.architecture.blueprints.todoapp.util.providers.BaseNavigator;
 
 /**
@@ -30,8 +35,12 @@ public class TasksNavigator {
     @NonNull
     private final BaseNavigator mNavigationProvider;
 
-    public TasksNavigator(@NonNull BaseNavigator mNavigationProvider) {
+    @NonNull
+    private final FragmentActivity mActivity;
+
+    public TasksNavigator(@NonNull BaseNavigator mNavigationProvider, @NonNull FragmentActivity mActivity) {
         this.mNavigationProvider = mNavigationProvider;
+        this.mActivity = mActivity;
     }
 
     /**
@@ -48,8 +57,10 @@ public class TasksNavigator {
      * @param taskId id of the task.
      */
     void openTaskDetails(String taskId) {
-        mNavigationProvider.startActivityForResultWithExtra(TaskDetailActivity.class, -1,
-                TaskDetailActivity.EXTRA_TASK_ID, taskId);
+        ActivityUtils.replaceFragmentInActivity(mActivity.getSupportFragmentManager(),
+                TaskDetailFragment.newInstance(taskId), R.id.contentFrame);
+       /* mNavigationProvider.startActivityForResultWithExtra(TaskDetailActivity.class, -1,
+                TaskDetailActivity.EXTRA_TASK_ID, taskId);*/
     }
 
 }

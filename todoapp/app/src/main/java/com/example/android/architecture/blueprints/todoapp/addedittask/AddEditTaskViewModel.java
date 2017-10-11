@@ -1,5 +1,7 @@
 package com.example.android.architecture.blueprints.todoapp.addedittask;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
@@ -11,9 +13,9 @@ import com.google.common.base.Strings;
 
 import rx.Completable;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Func1;
 import rx.subjects.PublishSubject;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * ViewModel handling the adding and deleting of tasks.
@@ -68,9 +70,18 @@ public class AddEditTaskViewModel {
         }
         return mTasksRepository
                 .getTask(mTaskId)
-                .map(this::restoreTask)
-                .doOnError(__ -> showSnackbar(R.string.empty_task_message))
-                .map(task -> new AddEditTaskUiModel(task.getTitle(), task.getDescription()));
+                .map(new Func1<Task, Task>() {
+                    @Override
+                    public Task call(Task task) {
+                        return restoreTask(task);
+                    }
+                })
+                .map(new Func1<Task, AddEditTaskUiModel>() {
+                    @Override
+                    public AddEditTaskUiModel call(Task task) {
+                        return new AddEditTaskUiModel(task.getTitle(), task.getDescription());
+                    }
+                });
     }
 
     /**
@@ -100,7 +111,12 @@ public class AddEditTaskViewModel {
     @NonNull
     public Completable saveTask(String title, String description) {
         return createTask(title, description)
-                .doOnCompleted(mNavigator::onTaskSaved);
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        mNavigator.onTaskSaved();
+                    }
+                });
     }
 
     private boolean isNewTask() {

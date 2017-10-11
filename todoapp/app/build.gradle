@@ -1,23 +1,19 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdkVersion rootProject.compileSdkVersion
+    buildToolsVersion "$rootProject.buildToolsVersion"
 
     defaultConfig {
         applicationId "com.example.android.architecture.blueprints.todomvp"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdkVersion rootProject.minSdkVersion
+        targetSdkVersion rootProject.targetSdkVersion
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
 
     buildTypes {
         debug {
@@ -67,17 +63,27 @@ android {
     }
 }
 
+repositories {
+    maven {
+        url 'https://maven.google.com'
+    }
+    jcenter()
+}
+
 /*
  Dependency versions are defined in the top level build.gradle file. This helps keeping track of
  all versions in a single place. This improves readability and helps managing project complexity.
  */
 dependencies {
+    debugCompile project(path: ':library', configuration: "debug")
+    releaseCompile project(path: ':library', configuration: "release")
+
     // App's dependencies, including test
-    compile "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
-    compile "com.android.support:cardview-v7:$rootProject.supportLibraryVersion"
-    compile "com.android.support:design:$rootProject.supportLibraryVersion"
-    compile "com.android.support:recyclerview-v7:$rootProject.supportLibraryVersion"
-    compile "com.android.support:support-v4:$rootProject.supportLibraryVersion"
+    compile "com.android.support:appcompat-v7:$rootProject.supportLibVersion"
+    compile "com.android.support:cardview-v7:$rootProject.supportLibVersion"
+    compile "com.android.support:design:$rootProject.supportLibVersion"
+    compile "com.android.support:recyclerview-v7:$rootProject.supportLibVersion"
+    compile "com.android.support:support-v4:$rootProject.supportLibVersion"
     compile "com.android.support.test.espresso:espresso-idling-resource:$rootProject.espressoVersion"
     compile "com.google.guava:guava:$rootProject.guavaVersion"
     compile "io.reactivex:rxjava:$rootProject.rxjavaVersion"
@@ -85,17 +91,17 @@ dependencies {
     compile "com.squareup.sqlbrite:sqlbrite:$rootProject.sqlbriteVersion"
 
     // Dependencies for local unit tests
-    testCompile "junit:junit:$rootProject.ext.junitVersion"
-    testCompile "org.mockito:mockito-all:$rootProject.ext.mockitoVersion"
-    testCompile "org.hamcrest:hamcrest-all:$rootProject.ext.hamcrestVersion"
+    testCompile "junit:junit:$rootProject.jUnitVersion"
+    testCompile "org.mockito:mockito-all:1.10.19"
+    testCompile "org.hamcrest:hamcrest-all:$rootProject.hamcrestVersion"
 
     // Android Testing Support Library's runner and rules
-    androidTestCompile "com.android.support.test:runner:$rootProject.ext.runnerVersion"
-    androidTestCompile "com.android.support.test:rules:$rootProject.ext.runnerVersion"
+    androidTestCompile "com.android.support.test:runner:$rootProject.runnerVersion"
+    androidTestCompile "com.android.support.test:rules:$rootProject.runnerVersion"
 
     // Dependencies for Android unit tests
-    androidTestCompile "junit:junit:$rootProject.ext.junitVersion"
-    androidTestCompile "org.mockito:mockito-core:$rootProject.ext.mockitoVersion"
+    androidTestCompile "junit:junit:$rootProject.jUnitVersion"
+    androidTestCompile "org.mockito:mockito-core:1.10.19"
     androidTestCompile 'com.google.dexmaker:dexmaker:1.2'
     androidTestCompile 'com.google.dexmaker:dexmaker-mockito:1.2'
 
@@ -105,9 +111,9 @@ dependencies {
     androidTestCompile "com.android.support.test.espresso:espresso-intents:$rootProject.espressoVersion"
 
     // Resolve conflicts between main and test APK:
-    androidTestCompile "com.android.support:support-annotations:$rootProject.supportLibraryVersion"
-    androidTestCompile "com.android.support:support-v4:$rootProject.supportLibraryVersion"
-    androidTestCompile "com.android.support:recyclerview-v7:$rootProject.supportLibraryVersion"
-    androidTestCompile "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
-    androidTestCompile "com.android.support:design:$rootProject.supportLibraryVersion"
+    androidTestCompile "com.android.support:support-annotations:$rootProject.supportLibVersion"
+    androidTestCompile "com.android.support:support-v4:$rootProject.supportLibVersion"
+    androidTestCompile "com.android.support:recyclerview-v7:$rootProject.supportLibVersion"
+    androidTestCompile "com.android.support:appcompat-v7:$rootProject.supportLibVersion"
+    androidTestCompile "com.android.support:design:$rootProject.supportLibVersion"
 }

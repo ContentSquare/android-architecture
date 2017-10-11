@@ -3,6 +3,7 @@ package com.example.android.architecture.blueprints.todoapp.tasks;
 import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentActivity;
 
 import com.example.android.architecture.blueprints.todoapp.Injection;
 import com.example.android.architecture.blueprints.todoapp.util.providers.BaseNavigator;
@@ -17,12 +18,12 @@ class TasksModule {
         Context appContext = activity.getApplicationContext();
         BaseNavigator navigationProvider = Injection.createNavigationProvider(activity);
         return new TasksViewModel(Injection.provideTasksRepository(appContext),
-                createTasksNavigator(navigationProvider), Injection.provideSchedulerProvider());
+                createTasksNavigator(navigationProvider, activity), Injection.provideSchedulerProvider());
     }
 
     @NonNull
     public static TasksNavigator createTasksNavigator(
-            @NonNull BaseNavigator navigationProvider) {
-        return new TasksNavigator(navigationProvider);
+            @NonNull BaseNavigator navigationProvider, @NonNull Activity activity) {
+        return new TasksNavigator(navigationProvider, (FragmentActivity) activity);
     }
 }

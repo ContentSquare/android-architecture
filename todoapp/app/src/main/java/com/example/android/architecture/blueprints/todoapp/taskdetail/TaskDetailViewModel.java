@@ -16,6 +16,8 @@
 
 package com.example.android.architecture.blueprints.todoapp.taskdetail;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import android.app.Activity;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -27,10 +29,11 @@ import com.google.common.base.Strings;
 
 import rx.Completable;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Listens to user actions from the UI ({@link TaskDetailFragment}), retrieves the data and edits,
@@ -87,9 +90,22 @@ public class TaskDetailViewModel {
         }
 
         return mTasksRepository.getTask(mTaskId)
-                .map(this::createModel)
-                .doOnSubscribe(() -> mLoadingSubject.onNext(true))
-                .doOnNext(__ -> mLoadingSubject.onNext(false));
+                .map(new Func1<Task, TaskUiModel>() {
+                    @Override
+                    public TaskUiModel call(Task task) {
+                        return createModel(task);
+                    }
+                }).doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        mLoadingSubject.onNext(true);
+                    }
+                }).doOnNext(new Action1<TaskUiModel>() {
+                    @Override
+                    public void call(TaskUiModel taskUiModel) {
+                        mLoadingSubject.onNext(false);
+                    }
+                });
     }
 
     @NonNull
@@ -128,11 +144,14 @@ public class TaskDetailViewModel {
      */
     @NonNull
     public Completable editTask() {
-        return Completable.fromAction(() -> {
-            if (Strings.isNullOrEmpty(mTaskId)) {
-                throw new RuntimeException("Task id null or empty");
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                if (Strings.isNullOrEmpty(mTaskId)) {
+                    throw new RuntimeException("Task id null or empty");
+                }
+                mNavigator.onStartEditTask(mTaskId);
             }
-            mNavigator.onStartEditTask(mTaskId);
         });
     }
 
@@ -144,12 +163,15 @@ public class TaskDetailViewModel {
      */
     @NonNull
     public Completable deleteTask() {
-        return Completable.fromAction(() -> {
-            if (Strings.isNullOrEmpty(mTaskId)) {
-                throw new RuntimeException("Task id null or empty");
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                if (Strings.isNullOrEmpty(mTaskId)) {
+                    throw new RuntimeException("Task id null or empty");
+                }
+                mTasksRepository.deleteTask(mTaskId);
+                mNavigator.onTaskDeleted();
             }
-            mTasksRepository.deleteTask(mTaskId);
-            mNavigator.onTaskDeleted();
         });
     }
 
@@ -175,7 +197,12 @@ public class TaskDetailViewModel {
     @NonNull
     private Completable completeTask() {
         return mTasksRepository.completeTask(mTaskId)
-                .doOnCompleted(() -> mSnackbarText.onNext(R.string.task_marked_complete));
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        mSnackbarText.onNext(R.string.task_marked_complete);
+                    }
+                });
     }
 
     /**
@@ -184,7 +211,12 @@ public class TaskDetailViewModel {
     @NonNull
     private Completable activateTask() {
         return mTasksRepository.activateTask(mTaskId)
-                .doOnCompleted(() -> mSnackbarText.onNext(R.string.task_marked_active));
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        mSnackbarText.onNext(R.string.task_marked_active);
+                    }
+                });
     }
 
 }

@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package com.example.android.architecture.blueprints.todoapp.data;
 
@@ -30,9 +31,11 @@ import java.util.Map;
 import rx.Completable;
 import rx.Observable;
 
+*/
 /**
  * Implementation of a remote data source with static access to the data for easy testing.
- */
+ *//*
+
 public class FakeTasksRemoteDataSource implements TasksDataSource {
 
     private static final Map<String, Task> TASKS_SERVICE_DATA = new LinkedHashMap<>();
@@ -140,3 +143,4 @@ public class FakeTasksRemoteDataSource implements TasksDataSource {
         }
     }
 }
+*/

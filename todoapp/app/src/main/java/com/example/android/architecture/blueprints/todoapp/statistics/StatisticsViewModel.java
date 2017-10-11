@@ -16,6 +16,8 @@
 
 package com.example.android.architecture.blueprints.todoapp.statistics;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import android.support.annotation.NonNull;
 
 import com.example.android.architecture.blueprints.todoapp.R;
@@ -24,9 +26,11 @@ import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepo
 import com.example.android.architecture.blueprints.todoapp.util.EspressoIdlingResource;
 import com.example.android.architecture.blueprints.todoapp.util.providers.BaseResourceProvider;
 
-import rx.Observable;
+import java.util.List;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import rx.Observable;
+import rx.functions.Func1;
+import rx.functions.Func2;
 
 /**
  * Retrieves the data and exposes updates for the progress of fetching the statistics.
@@ -58,20 +62,45 @@ public class StatisticsViewModel {
                 .refreshTasks()
                 .andThen(mTasksRepository.getTasks()
                         .first())
-                .flatMap(Observable::from);
+                .flatMap(new Func1<List<Task>, Observable<Task>>() {
+                    @Override
+                    public Observable<Task> call(List<Task> tasks) {
+                        return Observable.from(tasks);
+                    }
+                });
 
-        Observable<Integer> completedTasks = tasks.filter(Task::isCompleted).count();
-        Observable<Integer> activeTasks = tasks.filter(Task::isActive).count();
+        Observable<Integer> completedTasks = tasks.filter(new Func1<Task, Boolean>() {
+            @Override
+            public Boolean call(Task task) {
+                return task.isCompleted();
+            }
+        }).count();
+        Observable<Integer> activeTasks = tasks.filter(new Func1<Task, Boolean>() {
+            @Override
+            public Boolean call(Task task) {
+                return task.isActive();
+            }
+        }).count();
 
         return Observable.merge(
                 Observable.just(mResourceProvider.getString(R.string.loading)),
                 Observable.zip(completedTasks,
-                        activeTasks,
-                        (completed, active) -> getStatisticsString(active, completed))
+                        activeTasks, new Func2<Integer, Integer, String>() {
+                            @Override
+                            public String call(Integer integer, Integer integer2) {
+                                return getStatisticsString(integer,integer2);
+                            }
+                        }).onErrorResumeNext(Observable.just("Error"))
+                        /*(completed, active) -> getStatisticsString(active, completed))
                         .onErrorResumeNext(throwable -> {
                             return Observable.just(mResourceProvider.getString(R.string.loading_tasks_error));
-                        }))
-                .map(StatisticsUiModel::new);
+                        })*/)
+                .map(new Func1<String, StatisticsUiModel>() {
+                    @Override
+                    public StatisticsUiModel call(String s) {
+                        return new StatisticsUiModel(s);
+                    }
+                });
     }
 
     @NonNull

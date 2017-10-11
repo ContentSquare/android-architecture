@@ -32,12 +32,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.example.android.architecture.blueprints.todoapp.R;
 import com.google.common.base.Preconditions;
 
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
@@ -104,10 +107,15 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void setupFab() {
-        FloatingActionButton fab =
+       /* FloatingActionButton fab =
                 getActivity().findViewById(R.id.fab_edit_task);
 
-        fab.setOnClickListener(__ -> editTask());
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                editTask();
+            }
+        });*/
     }
 
     private void bindViewModel() {
@@ -120,11 +128,17 @@ public class TaskDetailFragment extends Fragment {
         mSubscription.add(getViewModel().getTaskUiModel()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        this::updateView,
-                        // onError
-                        __ -> showMissingTask()));
+                .subscribe(new Action1<TaskUiModel>() {
+                               @Override
+                               public void call(TaskUiModel taskUiModel) {
+                                   updateView(taskUiModel);
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+                                   showMissingTask();
+                               }
+                           }));
 
         // The ViewModel holds an observable containing the state of the UI.
         // subscribe to the emissions of the loading indicator visibility
@@ -132,22 +146,34 @@ public class TaskDetailFragment extends Fragment {
         mSubscription.add(getViewModel().getLoadingIndicatorVisibility()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        this::setLoadingIndicatorVisibility,
-                        // onError
-                        __ -> showMissingTask()));
+                .subscribe(new Action1<Boolean>() {
+                               @Override
+                               public void call(Boolean aBoolean) {
+                                   setLoadingIndicatorVisibility(aBoolean);
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+                                   showMissingTask();
+                               }
+                           }));
 
         // subscribe to the emissions of the snackbar text
         // every time the snackbar text emits, show the snackbar
         mSubscription.add(getViewModel().getSnackbarText()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        this::showSnackbar,
-                        // onError
-                        throwable -> Log.e(TAG, "Unable to display snackbar text", throwable)));
+                .subscribe(new Action1<Integer>() {
+                               @Override
+                               public void call(Integer integer) {
+                                   showSnackbar(integer);
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+
+                               }
+                           }));
     }
 
     private void unbindViewModel() {
@@ -189,46 +215,63 @@ public class TaskDetailFragment extends Fragment {
 
     private void showCompletionStatus(final boolean complete) {
         mDetailCompleteStatus.setChecked(complete);
-        mDetailCompleteStatus.setOnCheckedChangeListener(
-                (buttonView, isChecked) -> taskCheckChanged(isChecked));
+        mDetailCompleteStatus.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                taskCheckChanged(b);
+            }
+        });
     }
 
     private void taskCheckChanged(final boolean checked) {
         getSubscription().add(getViewModel().taskCheckChanged(checked)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        () -> {
-                            // nothing to do here
-                        },
-                        // onError
-                        throwable -> showMissingTask()));
+                .subscribe(new Action0() {
+                               @Override
+                               public void call() {
+
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+                                   showMissingTask();
+                               }
+                           }));
     }
 
     private void deleteTask() {
         getSubscription().add(getViewModel().deleteTask()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        () -> {
-                            //nothing to do here
-                        },
-                        // onError
-                        __ -> showMissingTask()));
+                .subscribe(new Action0() {
+                               @Override
+                               public void call() {
+
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+                                   showMissingTask();
+                               }
+                           }));
     }
 
     private void editTask() {
         getSubscription().add(getViewModel().editTask()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(  // onNext
-                        () -> {
-                            //nothing to do here
-                        },
-                        // onError
-                        __ -> showMissingTask()));
+                .subscribe(new Action0() {
+                    @Override
+                    public void call() {
+
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        showMissingTask();
+                    }
+                }));
     }
 
     private void showSnackbar(@StringRes int text) {

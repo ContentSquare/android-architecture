@@ -26,6 +26,7 @@ import java.util.List;
 
 import rx.Completable;
 import rx.Observable;
+import rx.functions.Action1;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -169,7 +170,12 @@ public class TasksRepository implements TasksDataSource {
     public Completable refreshTasks() {
         return mTasksRemoteDataSource.getTasks()
                 .subscribeOn(mBaseSchedulerProvider.io())
-                .doOnNext(mTasksLocalDataSource::saveTasks)
+                .doOnNext(new Action1<List<Task>>() {
+                    @Override
+                    public void call(List<Task> tasks) {
+                        mTasksLocalDataSource.saveTasks(tasks);
+                    }
+                })
                 .toCompletable();
     }
 

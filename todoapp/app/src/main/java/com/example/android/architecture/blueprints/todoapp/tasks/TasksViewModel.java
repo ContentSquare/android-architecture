@@ -1,5 +1,7 @@
 package com.example.android.architecture.blueprints.todoapp.tasks;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
@@ -8,7 +10,6 @@ import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.annotation.VisibleForTesting;
 import android.support.v4.util.Pair;
-import android.util.Log;
 
 import com.example.android.architecture.blueprints.todoapp.R;
 import com.example.android.architecture.blueprints.todoapp.addedittask.AddEditTaskActivity;
@@ -20,10 +21,12 @@ import java.util.List;
 
 import rx.Completable;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * ViewModel for the list of tasks.
@@ -76,11 +79,41 @@ public final class TasksViewModel {
     @NonNull
     public Observable<TasksUiModel> getUiModel() {
         return getTaskItems()
-                .doOnSubscribe(() -> mLoadingIndicatorSubject.onNext(true))
-                .doOnNext(__ -> mLoadingIndicatorSubject.onNext(false))
-                .doOnError(__ -> mSnackbarText.onNext(R.string.loading_tasks_error))
-                .switchMap(tasks -> mFilter.map(filterType -> Pair.create(tasks, filterType)))
-                .map(this::constructTasksModel);
+                .doOnSubscribe(new Action0() {
+                    @Override
+                    public void call() {
+                        mLoadingIndicatorSubject.onNext(true);
+                    }
+                }).doOnNext(new Action1<List<TaskItem>>() {
+                    @Override
+                    public void call(List<TaskItem> taskItems) {
+                        mLoadingIndicatorSubject.onNext(false);
+                    }
+                }).doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        mSnackbarText.onNext(R.string.loading_tasks_error);
+                    }
+                }).switchMap(new Func1<List<TaskItem>, Observable<Pair<List<TaskItem>, TasksFilterType>>>() {
+                    @Override
+                    public Observable<Pair<List<TaskItem>, TasksFilterType>> call(final List<TaskItem> taskItems) {
+                        return mFilter.map(
+                                new Func1<TasksFilterType, Pair<List<TaskItem>, TasksFilterType>>
+                                        () {
+                                    @Override
+                                    public Pair<List<TaskItem>, TasksFilterType> call(TasksFilterType
+                                                                                              tasksFilterType) {
+                                        return Pair.create(taskItems, tasksFilterType);
+                                    }
+                                });
+                    }
+
+                }).map(new Func1<Pair<List<TaskItem>, TasksFilterType>, TasksUiModel>() {
+                    @Override
+                    public TasksUiModel call(Pair<List<TaskItem>, TasksFilterType> listTasksFilterTypePair) {
+                        return constructTasksModel(listTasksFilterTypePair);
+                    }
+                });
     }
 
     @NonNull
@@ -102,12 +135,32 @@ public final class TasksViewModel {
 
     private Observable<List<TaskItem>> getTaskItems() {
         return Observable.combineLatest(mTasksRepository.getTasks(),
-                mFilter,
-                Pair::create)
-                .flatMap(pair -> Observable.from(pair.first)
-                        .filter(task -> shouldFilterTask(task, pair.second))
-                        .map(this::constructTaskItem)
-                        .toList());
+                mFilter, new Func2<List<Task>, TasksFilterType, Pair<List<Task>, TasksFilterType>>
+                        () {
+                    @Override
+                    public Pair<List<Task>, TasksFilterType> call(List<Task> tasks, TasksFilterType tasksFilterType) {
+                        return Pair.create(tasks, tasksFilterType);
+                    }
+                })
+                .flatMap(new Func1<Pair<List<Task>, TasksFilterType>, Observable<List<TaskItem>>>
+                        () {
+                    @Override
+                    public Observable<List<TaskItem>> call(final Pair<List<Task>, TasksFilterType>
+                                                             listTasksFilterTypePair) {
+                        return Observable.from(listTasksFilterTypePair.first).filter(new Func1<Task, Boolean>() {
+                            @Override
+                            public Boolean call(Task task) {
+                                return shouldFilterTask(task, listTasksFilterTypePair.second);
+                            }
+                        }).map(new Func1<Task, TaskItem>() {
+                            @Override
+                            public TaskItem call(Task task) {
+                                return constructTaskItem(task);
+                            }
+                        }).toList();
+                    }
+                });
+
     }
 
     private NoTasksModel getNoTasksModel(TasksFilterType mCurrentFiltering) {
@@ -125,14 +178,22 @@ public final class TasksViewModel {
     }
 
     @NonNull
-    private TaskItem constructTaskItem(Task task) {
+    private TaskItem constructTaskItem(final Task task) {
         @DrawableRes int background = task.isCompleted()
                 ? R.drawable.list_completed_touch_feedback
                 : R.drawable.touch_feedback;
 
-        return new TaskItem(task, background,
-                () -> handleTaskTaped(task),
-                checked -> handleTaskChecked(task, checked));
+        return new TaskItem(task, background, new Action0() {
+            @Override
+            public void call() {
+                handleTaskTaped(task);
+            }
+        }, new Action1<Boolean>() {
+            @Override
+            public void call(Boolean aBoolean) {
+                handleTaskChecked(task, aBoolean);
+            }
+        });
     }
 
     private void handleTaskTaped(Task task) {
@@ -143,23 +204,37 @@ public final class TasksViewModel {
         Completable checkTask = checked ? completeTask(task) : activateTask(task);
         checkTask.subscribeOn(mSchedulerProvider.computation())
                 .observeOn(mSchedulerProvider.computation())
-                .subscribe(
-                        //on Completed
-                        () -> {
-                        },
-                        // on error
-                        throwable -> Log.e(TAG, "Error completing or activating task")
-                );
+                .subscribe(new Action0() {
+                    @Override
+                    public void call() {
+
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+
+                    }
+                });
     }
 
     private Completable completeTask(Task completedTask) {
         return mTasksRepository.completeTask(completedTask)
-                .doOnCompleted(() -> mSnackbarText.onNext(R.string.task_marked_complete));
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        mSnackbarText.onNext(R.string.task_marked_complete);
+                    }
+                });
     }
 
     private Completable activateTask(Task activeTask) {
         return mTasksRepository.activateTask(activeTask)
-                .doOnCompleted(() -> mSnackbarText.onNext(R.string.task_marked_active));
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        mSnackbarText.onNext(R.string.task_marked_active);
+                    }
+                });
     }
 
     /**
@@ -168,7 +243,12 @@ public final class TasksViewModel {
     public Completable forceUpdateTasks() {
         mLoadingIndicatorSubject.onNext(true);
         return mTasksRepository.refreshTasks()
-                .doOnTerminate(() -> mLoadingIndicatorSubject.onNext(false));
+                .doOnTerminate(new Action0() {
+                    @Override
+                    public void call() {
+                        mLoadingIndicatorSubject.onNext(false);
+                    }
+                });
     }
 
     /**
@@ -258,7 +338,12 @@ public final class TasksViewModel {
      */
     @NonNull
     public Completable clearCompletedTasks() {
-        return Completable.fromAction(this::clearCompletedTasksAndNotify);
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                clearCompletedTasksAndNotify();
+            }
+        });
     }
 
     private void clearCompletedTasksAndNotify() {

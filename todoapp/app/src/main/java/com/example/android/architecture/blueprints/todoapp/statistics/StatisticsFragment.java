@@ -29,6 +29,7 @@ import com.example.android.architecture.blueprints.todoapp.R;
 import com.google.common.base.Preconditions;
 
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
@@ -87,11 +88,12 @@ public class StatisticsFragment extends Fragment {
         mSubscription.add(mViewModel.getUiModel()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        // onNext
-                        this::updateStatistics,
-                        // onError
-                        throwable -> Log.e(TAG, "Error retrieving statistics text", throwable)));
+                .subscribe(new Action1<StatisticsUiModel>() {
+                               @Override
+                               public void call(StatisticsUiModel statisticsUiModel) {
+                                   updateStatistics(statisticsUiModel);
+                               }
+                           }));
     }
 
     private void unbindViewModel() {

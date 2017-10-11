@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 import rx.Completable;
 import rx.Observable;
+import rx.functions.Action0;
+import rx.functions.Action1;
 
 /**
  * Implementation of the data source that adds a latency simulating network.
@@ -82,48 +84,72 @@ public class TasksRemoteDataSource implements TasksDataSource {
     }
 
     @Override
-    public Completable saveTask(@NonNull Task task) {
-        return Completable.fromAction(() -> TASKS_SERVICE_DATA.put(task.getId(), task));
+    public Completable saveTask(@NonNull final Task task) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                TASKS_SERVICE_DATA.put(task.getId(), task);
+            }
+        });
     }
 
     @Override
     public Completable saveTasks(@NonNull List<Task> tasks) {
         return Observable.from(tasks)
-                .doOnNext(this::saveTask)
-                .toCompletable();
+                .doOnNext(new Action1<Task>() {
+                    @Override
+                    public void call(Task task) {
+                        saveTask(task);
+                    }
+                }).toCompletable();
     }
 
     @Override
-    public Completable completeTask(@NonNull Task task) {
-        return Completable.fromAction(() -> {
-            Task completedTask = new Task(task.getTitle(), task.getDescription(), task.getId(), true);
-            TASKS_SERVICE_DATA.put(task.getId(), completedTask);
+    public Completable completeTask(@NonNull final Task task) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                Task completedTask = new Task(task.getTitle(), task.getDescription(), task.getId(), true);
+                TASKS_SERVICE_DATA.put(task.getId(), completedTask);
+
+            }
         });
     }
 
     @Override
-    public Completable completeTask(@NonNull String taskId) {
-        return Completable.fromAction(() -> {
-            Task task = TASKS_SERVICE_DATA.get(taskId);
-            task = new Task(task.getTitle(), task.getDescription(), taskId, true);
-            TASKS_SERVICE_DATA.put(task.getId(), task);
+    public Completable completeTask(@NonNull final String taskId) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                Task task = TASKS_SERVICE_DATA.get(taskId);
+                task = new Task(task.getTitle(), task.getDescription(), taskId, true);
+                TASKS_SERVICE_DATA.put(task.getId(), task);
+
+            }
         });
     }
 
     @Override
-    public Completable activateTask(@NonNull Task task) {
-        return Completable.fromAction(() -> {
-            Task activeTask = new Task(task.getTitle(), task.getDescription(), task.getId());
-            TASKS_SERVICE_DATA.put(task.getId(), activeTask);
+    public Completable activateTask(@NonNull final Task task) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                Task activeTask = new Task(task.getTitle(), task.getDescription(), task.getId());
+                TASKS_SERVICE_DATA.put(task.getId(), activeTask);
+            }
         });
     }
 
     @Override
-    public Completable activateTask(@NonNull String taskId) {
-        return Completable.fromAction(() -> {
-            Task task = TASKS_SERVICE_DATA.get(taskId);
-            task = new Task(task.getTitle(), task.getDescription(), taskId, false);
-            TASKS_SERVICE_DATA.put(task.getId(), task);
+    public Completable activateTask(@NonNull final String taskId) {
+        return Completable.fromAction(new Action0() {
+            @Override
+            public void call() {
+                Task task = TASKS_SERVICE_DATA.get(taskId);
+                task = new Task(task.getTitle(), task.getDescription(), taskId, false);
+                TASKS_SERVICE_DATA.put(task.getId(), task);
+
+            }
         });
     }
 

@@ -45,6 +45,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action0;
+import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 import rx.subscriptions.CompositeSubscription;
 
@@ -91,7 +93,7 @@ public class TasksFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        mListAdapter = new TasksAdapter(new ArrayList<>(0));
+        mListAdapter = new TasksAdapter(new ArrayList<TaskItem>(0));
 
         View root = inflater.inflate(R.layout.tasks_frag, container, false);
 
@@ -136,36 +138,51 @@ public class TasksFragment extends Fragment {
         mSubscription.add(mViewModel.getUiModel()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        //onNext
-                        this::updateView,
-                        //onError
-                        error -> Log.e(TAG, "Error loading tasks", error)
-                ));
+                .subscribe(new Action1<TasksUiModel>() {
+                               @Override
+                               public void call(TasksUiModel tasksUiModel) {
+                                   updateView(tasksUiModel);
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+
+                               }
+                           }));
 
         // subscribe to the emissions of the snackbar text
         // every time the snackbar text emits, show the snackbar
         mSubscription.add(mViewModel.getSnackbarMessage()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        //onNext
-                        this::showSnackbar,
-                        //onError
-                        error -> Log.d(TAG, "Error showing snackbar", error)
-                ));
+                .subscribe(new Action1<Integer>() {
+                               @Override
+                               public void call(Integer integer) {
+                                   showSnackbar(integer);
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+
+                               }
+                           }));
 
         // subscribe to the emissions of the loading indicator visibility
         // for every emission, update the visibility of the loading indicator
         mSubscription.add(mViewModel.getLoadingIndicatorVisibility()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        //onNext
-                        this::setLoadingIndicatorVisibility,
-                        //onError
-                        error -> Log.d(TAG, "Error showing loading indicator", error)
-                ));
+                .subscribe(new Action1<Boolean>() {
+                               @Override
+                               public void call(Boolean aBoolean) {
+                                   setLoadingIndicatorVisibility(aBoolean);
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+
+                               }
+                           }));
     }
 
     private void unbindViewModel() {
@@ -194,7 +211,12 @@ public class TasksFragment extends Fragment {
         mNoTaskIcon = root.findViewById(R.id.noTasksIcon);
         mNoTaskMainView = root.findViewById(R.id.noTasksMain);
         mNoTaskAddView = root.findViewById(R.id.noTasksAdd);
-        mNoTaskAddView.setOnClickListener(__ -> mViewModel.addNewTask());
+        mNoTaskAddView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mViewModel.addNewTask();
+            }
+        });
     }
 
     private void setupSwipeRefreshLayout(View root, ListView listView) {
@@ -208,14 +230,24 @@ public class TasksFragment extends Fragment {
         // Set the scrolling view in the custom SwipeRefreshLayout.
         swipeRefreshLayout.setScrollUpChild(listView);
 
-        swipeRefreshLayout.setOnRefreshListener(this::forceUpdate);
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                forceUpdate();
+            }
+        });
     }
 
     private void setupFabButton() {
         FloatingActionButton fab = getActivity().findViewById(R.id.fab_add_task);
 
         fab.setImageResource(R.drawable.ic_add);
-        fab.setOnClickListener(__ -> mViewModel.addNewTask());
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mViewModel.addNewTask();
+            }
+        });
     }
 
     @Override
@@ -245,28 +277,34 @@ public class TasksFragment extends Fragment {
         mSubscription.add(mViewModel.clearCompletedTasks()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        //onCompleted
-                        () -> {
-                            // nothing to do here
-                        },
-                        //onError
-                        error -> Log.d(TAG, "Error clearing completed tasks", error)
-                ));
+                .subscribe(new Action0() {
+                               @Override
+                               public void call() {
+
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+
+                               }
+                           }));
     }
 
     private void forceUpdate() {
         mSubscription.add(mViewModel.forceUpdateTasks()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        //onCompleted
-                        () -> {
-                            // nothing to do here
-                        },
-                        //onError
-                        error -> Log.d(TAG, "Error refreshing tasks", error)
-                ));
+                .subscribe(new Action0() {
+                               @Override
+                               public void call() {
+
+                               }
+                           }, new Action1<Throwable>() {
+                               @Override
+                               public void call(Throwable throwable) {
+
+                               }
+                           }));
     }
 
     @Override
@@ -279,19 +317,23 @@ public class TasksFragment extends Fragment {
         PopupMenu popup = new PopupMenu(getContext(), getActivity().findViewById(R.id.menu_filter));
         popup.getMenuInflater().inflate(R.menu.filter_tasks, popup.getMenu());
 
-        popup.setOnMenuItemClickListener(item -> {
-            switch (item.getItemId()) {
-                case R.id.active:
-                    mViewModel.filter(TasksFilterType.ACTIVE_TASKS);
-                    break;
-                case R.id.completed:
-                    mViewModel.filter(TasksFilterType.COMPLETED_TASKS);
-                    break;
-                default:
-                    mViewModel.filter(TasksFilterType.ALL_TASKS);
-                    break;
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.active:
+                        mViewModel.filter(TasksFilterType.ACTIVE_TASKS);
+                        break;
+                    case R.id.completed:
+                        mViewModel.filter(TasksFilterType.COMPLETED_TASKS);
+                        break;
+                    default:
+                        mViewModel.filter(TasksFilterType.ALL_TASKS);
+                        break;
+                }
+                return true;
+
             }
-            return true;
         });
 
         popup.show();
@@ -303,7 +345,12 @@ public class TasksFragment extends Fragment {
         }
         final SwipeRefreshLayout srl = getView().findViewById(R.id.refresh_layout);
         // Make sure setRefreshing() is called after the layout is done with everything else.
-        srl.post(() -> srl.setRefreshing(isVisible));
+        srl.post(new Runnable() {
+            @Override
+            public void run() {
+                srl.setRefreshing(isVisible);
+            }
+        });
     }
 
     private void showTasks(List<TaskItem> tasks) {
