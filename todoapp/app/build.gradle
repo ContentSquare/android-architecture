@@ -75,8 +75,7 @@ repositories {
  all versions in a single place. This improves readability and helps managing project complexity.
  */
 dependencies {
-    debugCompile project(path: ':library', configuration: "debug")
-    releaseCompile project(path: ':library', configuration: "release")
+    implementation project(':library')
 
     // App's dependencies, including test
     compile "com.android.support:appcompat-v7:$rootProject.supportLibVersion"
