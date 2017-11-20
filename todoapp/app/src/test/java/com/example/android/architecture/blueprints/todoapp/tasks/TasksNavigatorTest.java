@@ -29,7 +29,7 @@ public class TasksNavigatorTest {
         MockitoAnnotations.initMocks(this);
 
         // Get a reference to the class under test
-        mTasksNavigator = new TasksNavigator(mNavigationProvider, mActivity);
+        mTasksNavigator = new TasksNavigator(mNavigationProvider, new TasksActivity());
     }
 
     @Test

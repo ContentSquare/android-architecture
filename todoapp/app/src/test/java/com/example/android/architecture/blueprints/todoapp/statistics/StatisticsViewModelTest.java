@@ -67,7 +67,7 @@ public class StatisticsViewModelTest {
     public void getStatistics_emitsLoadingInitially() {
         //Given a list of tasks in the repository
         when(mTasksRepository.refreshTasks()).thenReturn(Completable.complete());
-        when(mTasksRepository.getTasks()).thenReturn(Observable.never());
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>never());
 
         withText(R.string.loading, LOADING);
 
@@ -96,7 +96,7 @@ public class StatisticsViewModelTest {
     public void getStatistics_withNoTasks_returnsCorrectData() {
         //Given a list of tasks in the repository
         when(mTasksRepository.refreshTasks()).thenReturn(Completable.complete());
-        when(mTasksRepository.getTasks()).thenReturn(Observable.just(new ArrayList<>()));
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>just(new ArrayList<Task>()));
         // And string resources
         withText(R.string.statistics_no_tasks, NO_TASKS);
 
@@ -112,7 +112,7 @@ public class StatisticsViewModelTest {
     public void getStatistics_emitsCorrectUiModel_afterStatisticsAreRetrieved_WithError() {
         //Given a list of tasks in the repository
         when(mTasksRepository.refreshTasks()).thenReturn(Completable.complete());
-        when(mTasksRepository.getTasks()).thenReturn(Observable.error(new Exception()));
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>error(new Exception()));
         // And a string to be returned for loading error
         withText(R.string.loading_tasks_error, LOADING_ERROR);
 

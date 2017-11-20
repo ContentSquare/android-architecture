@@ -82,7 +82,7 @@ public class TasksViewModelTest {
     @Test
     public void progressIndicator_emits_whenSubscribedToTasks() {
         // Given that the task repository never emits
-        when(mTasksRepository.getTasks()).thenReturn(Observable.never());
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>never());
         // Given that we are subscribed to the progress indicator
         mViewModel.getLoadingIndicatorVisibility().subscribe(mProgressIndicatorSubscriber);
 
@@ -96,7 +96,7 @@ public class TasksViewModelTest {
     @Test
     public void snackbarText_emits_whenError_whenRetrievingTasks() {
         // Given an error when retrieving tasks
-        when(mTasksRepository.getTasks()).thenReturn(Observable.error(new RuntimeException()));
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>error(new RuntimeException()));
         // Given that we are subscribed to the snackbar text
         mViewModel.getSnackbarMessage().subscribe(mSnackbarTextSubscriber);
 
@@ -180,7 +180,7 @@ public class TasksViewModelTest {
     @Test
     public void geTasksModel_emits_whenNoTasks_withFilterAll() {
         // Given that the task repository returns empty task list
-        when(mTasksRepository.getTasks()).thenReturn(Observable.just(new ArrayList<>()));
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>just(new ArrayList<Task>()));
 
         // When subscribed to the tasks
         mViewModel.getUiModel().subscribe(mTasksSubscriber);
@@ -196,7 +196,7 @@ public class TasksViewModelTest {
     @Test
     public void getTasksModel_emits_whenNoTasks_withFilterActive() {
         // Given that the task repository returns empty task list
-        when(mTasksRepository.getTasks()).thenReturn(Observable.just(new ArrayList<>()));
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>just(new ArrayList<Task>()));
         // Given that the filtering is active
         mViewModel.filter(ACTIVE_TASKS);
 
@@ -216,7 +216,7 @@ public class TasksViewModelTest {
         // Given that the filtering is completed
         mViewModel.filter(COMPLETED_TASKS);
         // Given that the task repository returns empty task list
-        when(mTasksRepository.getTasks()).thenReturn(Observable.just(new ArrayList<>()));
+        when(mTasksRepository.getTasks()).thenReturn(Observable.<List<Task>>just(new ArrayList<Task>()));
 
         // When subscribed to the tasks
         mViewModel.getUiModel().subscribe(mTasksSubscriber);

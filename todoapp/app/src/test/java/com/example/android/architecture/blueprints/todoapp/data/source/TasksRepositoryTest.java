@@ -16,6 +16,10 @@
 
 package com.example.android.architecture.blueprints.todoapp.data.source;
 
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import android.content.Context;
 
 import com.example.android.architecture.blueprints.todoapp.data.Task;
@@ -34,10 +38,6 @@ import java.util.List;
 import rx.Completable;
 import rx.Observable;
 import rx.observers.TestSubscriber;
-
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for the implementation of the in-memory repository with cache.
@@ -315,7 +315,8 @@ public class TasksRepositoryTest {
     class ArrangeBuilder {
 
         ArrangeBuilder withTasksNotAvailable(TasksDataSource dataSource) {
-            when(dataSource.getTasks()).thenReturn(Observable.just(Collections.emptyList()));
+            when(dataSource.getTasks()).thenReturn(Observable.just(Collections
+                    .<Task>emptyList()));
             return this;
         }
 
@@ -326,12 +327,14 @@ public class TasksRepositoryTest {
         }
 
         ArrangeBuilder withTaskNotAvailable(TasksDataSource dataSource, String taskId) {
-            when(dataSource.getTask(eq(taskId))).thenReturn(Observable.<Task>just(null).concatWith(Observable.never()));
+            when(dataSource.getTask(eq(taskId))).thenReturn(Observable.<Task>just(null)
+                    .concatWith(Observable.<Task>never()));
             return this;
         }
 
         ArrangeBuilder withTaskAvailable(TasksDataSource dataSource, Task task) {
-            when(dataSource.getTask(eq(task.getId()))).thenReturn(Observable.just(task).concatWith(Observable.never()));
+            when(dataSource.getTask(eq(task.getId()))).thenReturn(Observable.just(task)
+                    .concatWith(Observable.<Task>never()));
             return this;
         }
 

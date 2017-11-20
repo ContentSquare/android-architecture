@@ -90,7 +90,8 @@ public class AddEditTaskViewModelTest {
     @Test
     public void getTask_whenRepositoryReturnsError_snackbarEmits() {
         // Given a task in the repository
-        when(mTasksRepository.getTask(TASK.getId())).thenReturn(Observable.error(new Exception()));
+        when(mTasksRepository.getTask(TASK.getId())).thenReturn(Observable.<Task>error(new Exception
+                ()));
         // Get a reference to the class under test for a task id
         mViewModel = new AddEditTaskViewModel(TASK.getId(), mTasksRepository, mNavigator);
         // With subscribed to the snackbar
